@@ -25,7 +25,7 @@ import { BLUEPRINT_CONFIG_REPO_URL } from '@/lib/configConstants';
 import { SinglePromptView } from '@/app/analysis/components/SinglePromptView';
 import { AggregateAnalysisView } from '@/app/analysis/components/AggregateAnalysisView';
 import { useToast } from '@/components/ui/use-toast';
-import { generateMinimalBlueprintYaml } from '@/app/sandbox/utils/yaml-generator';
+import { generateMinimalBlueprintYaml } from '@/lib/yaml-generator';
 import { useAnalysis } from '@/app/analysis/context/AnalysisContext';
 import AnalysisPageHeader from '@/app/analysis/components/AnalysisPageHeader';
 import { fromSafeTimestamp, formatTimestampForDisplay } from '@/lib/timestampUtils';

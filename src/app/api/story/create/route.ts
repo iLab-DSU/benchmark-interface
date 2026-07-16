@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { configure } from '@/cli/config';
 import { getLogger } from '@/utils/logger';
 import { CREATOR_SYSTEM_PROMPT } from '../utils/prompt-constants';
-import { parseWevalConfigFromResponse } from '@/app/sandbox/utils/json-response-parser';
+import { parseWevalConfigFromResponse } from '@/lib/json-response-parser';
 import { resilientLLMCall, validateStoryResponse } from '../utils/llm-resilience';
 import { z } from 'zod';
 

@@ -20,7 +20,7 @@ import { Separator } from '@/components/ui/separator';
 import { ComparisonConfig } from '@/cli/types/cli_types';
 import { AutoCreateModal } from './AutoCreateModal';
 import { DEFAULT_BLUEPRINT_CONTENT } from '../hooks/useWorkspace';
-import { generateMinimalBlueprintYaml } from '../utils/yaml-generator';
+import { generateMinimalBlueprintYaml } from '@/lib/yaml-generator';
 import { parseAndNormalizeBlueprint } from '@/lib/blueprint-parser';
 import { useImmer } from 'use-immer';
 import { InputModal } from './InputModal';
@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TourModal } from './TourModal';
 import { MobileFileNavigator } from './MobileFileNavigator';
-import { useMobile } from '../hooks/useMobile';
+import { useMobile } from '@/hooks/useMobile';
 import {
   Dialog,
   DialogContent,

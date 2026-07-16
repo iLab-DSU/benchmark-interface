@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { LLMApiCallOptions } from '@/lib/llm-clients/types';
 import { getModelResponse } from '@/cli/services/llm-service';
 import { checkForErrors } from '@/cli/utils/response-utils';
-import { parseWevalConfigFromResponse } from '@/app/sandbox/utils/json-response-parser';
+import { parseWevalConfigFromResponse } from '@/lib/json-response-parser';
 import { fromZodError } from 'zod-validation-error';
 import { z } from 'zod';
 import {

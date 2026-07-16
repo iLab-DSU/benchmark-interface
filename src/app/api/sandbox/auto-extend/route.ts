@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getModelResponse } from '@/cli/services/llm-service';
 import { checkForErrors } from '@/cli/utils/response-utils';
-import { parsePromptsFromResponse } from '@/app/sandbox/utils/json-response-parser';
-import { generateMinimalBlueprintYaml } from '@/app/sandbox/utils/yaml-generator';
+import { parsePromptsFromResponse } from '@/lib/json-response-parser';
+import { generateMinimalBlueprintYaml } from '@/lib/yaml-generator';
 import { WevalConfig } from '@/types/shared';
 import { z } from 'zod';
 import {
