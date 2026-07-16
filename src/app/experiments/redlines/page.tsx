@@ -85,7 +85,7 @@ export default async function RedlinesIndexPage() {
               <div className="truncate">
                 <div className="font-medium truncate">
                   <a 
-                    href={`/redlines/${encodeURIComponent(it.configId)}`}
+                    href={`/experiments/redlines/${encodeURIComponent(it.configId)}`}
                     className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
                   >
                     {it.configId}

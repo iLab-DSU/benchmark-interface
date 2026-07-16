@@ -49,7 +49,7 @@ export default async function NDeltasIndexPage() {
                       <td className="px-3 py-2 font-mono">{m.medianDelta !== null && m.medianDelta !== undefined ? m.medianDelta.toFixed(3) : '—'}</td>
                       <td className="px-3 py-2">{m.totalEntries}</td>
                       <td className="px-3 py-2">{new Date(m.generatedAt).toLocaleString()}</td>
-                      <td className="px-3 py-2"><Link className="underline" href={`/ndeltas/${encodeURIComponent(m.modelId)}`}>View details</Link></td>
+                      <td className="px-3 py-2"><Link className="underline" href={`/experiments/ndeltas/${encodeURIComponent(m.modelId)}`}>View details</Link></td>
                     </tr>
                   ))}
                 </tbody>
