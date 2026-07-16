@@ -59,3 +59,40 @@ describe('artefact read/write round-trip', () => {
     expect(cov).toMatchObject({ avgCoverageExtent: 0.5 });
   });
 });
+
+describe('core.json excludedModels computation', () => {
+  const configId = 'test_config_excluded';
+  const runLabel = 'testrun';
+  const timestamp = '2024-01-02T00-00-00Z';
+  const fileName = `${runLabel}_${timestamp}_comparison.json`;
+
+  // modelA answers everything; modelB is missing p2; modelC returns whitespace on p1
+  const sampleData: any = {
+    configId,
+    configTitle: 'Sample',
+    runLabel,
+    timestamp,
+    config: { id: configId, title: 'Sample', models: ['modelA', 'modelB', 'modelC'], prompts: [] },
+    effectiveModels: ['modelA', 'modelB', 'modelC'],
+    promptIds: ['p1', 'p2'],
+    allFinalAssistantResponses: {
+      p1: { modelA: 'Hello', modelB: 'Hi', modelC: '   ' },
+      p2: { modelA: 'World', modelC: 'Fine answer' },
+    },
+    evaluationResults: { llmCoverageScores: {}, similarityMatrix: {} },
+  };
+
+  beforeAll(async () => {
+    process.env.STORAGE_PROVIDER = 'local';
+    await saveResult(configId, fileName, sampleData);
+  });
+
+  it('flags models with missing or whitespace-only responses, while responsive models pass', async () => {
+    const core = await getCoreResult(configId, runLabel, timestamp);
+    expect(core).toBeTruthy();
+    const excluded = (core as any).excludedModels;
+    expect(excluded).toContain('modelB'); // missing p2
+    expect(excluded).toContain('modelC'); // whitespace on p1
+    expect(excluded).not.toContain('modelA');
+  });
+});
