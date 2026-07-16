@@ -236,6 +236,24 @@ export async function checkPREvalLimits(
 }
 
 /**
+ * Deterministically sample `count` items spread evenly across the list.
+ * Large blueprints are often organised in blocks (per language, per topic),
+ * so staging only the first N prompts would validate a single block and skip
+ * the rest. An evenly-spaced sample covers the whole file while staying
+ * stable for a given prompt list (same PR content → same staging run hash).
+ */
+export function sampleEvenlySpaced<T>(items: T[], count: number): T[] {
+  if (count <= 0) return [];
+  if (items.length <= count) return items;
+  const step = items.length / count;
+  const sampled: T[] = [];
+  for (let i = 0; i < count; i++) {
+    sampled.push(items[Math.floor(i * step)]);
+  }
+  return sampled;
+}
+
+/**
  * Apply limits to a blueprint by trimming/filtering
  * Returns a modified config that fits within limits
  *
@@ -248,9 +266,10 @@ export async function applyPREvalLimits(
   const limits = PR_EVAL_LIMITS;
   const modifiedConfig = { ...config };
 
-  // Trim prompts
+  // Sample prompts evenly across the blueprint rather than truncating to the
+  // first N, so the staging run exercises the whole file.
   if (modifiedConfig.prompts && modifiedConfig.prompts.length > limits.maxPrompts) {
-    modifiedConfig.prompts = modifiedConfig.prompts.slice(0, limits.maxPrompts);
+    modifiedConfig.prompts = sampleEvenlySpaced(modifiedConfig.prompts, limits.maxPrompts);
   }
 
   // Trim temperatures
@@ -301,6 +320,7 @@ export function formatLimitViolations(violations: LimitViolation[]): string {
 
   lines.push('\n**What happens:**');
   lines.push('- Your blueprint will be automatically trimmed to fit limits');
+  lines.push(`- Prompts are sampled evenly across the blueprint (not just the first ${PR_EVAL_LIMITS.maxPrompts})`);
   lines.push('- PR evaluation runs with trimmed version for validation');
   lines.push('- After merge, full evaluation runs with all prompts/models/variations');
   lines.push('- You can also test locally: `pnpm cli run-config github --name your-blueprint`');
