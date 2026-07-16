@@ -337,8 +337,11 @@ export async function POST(req: NextRequest) {
 
       const contentHash = generateConfigContentHash(config);
 
+      // parseSubmittedBlueprint always sets a path-derived id
+      const configId = config.id!;
+
       // Check if already evaluated
-      const alreadyEvaluated = await hasBeenEvaluated(config.id, contentHash);
+      const alreadyEvaluated = await hasBeenEvaluated(configId, contentHash);
 
       if (alreadyEvaluated) {
         console.log(`[GitHub Push Webhook] Blueprint ${config.id} already evaluated (hash: ${contentHash})`);
