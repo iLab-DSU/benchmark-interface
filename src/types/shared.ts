@@ -470,9 +470,21 @@ export interface Judge {
 // Public config type for llm-coverage evaluation (shared)
 export interface LLMCoverageEvaluationConfig {
     judgeModels?: string[]; // Backwards compatibility
-    judgeMode?: 'failover' | 'consensus'; // Backwards compatibility
+    /**
+     * @deprecated Accepted for backwards compatibility but ignored: scores are
+     * always averaged across all successful judges (consensus).
+     */
+    judgeMode?: 'failover' | 'consensus';
+    /**
+     * Custom judge panel. NOTE: configuring custom judges disables the
+     * automatic backup judge that supplements failed default judges.
+     */
     judges?: Judge[];
-    useExperimentalScale?: boolean; // Use 9-point classification scale instead of 5-point
+    /**
+     * Selects the 9-point experimental classification scale (default: true).
+     * Set to false to use the classic 5-point scale.
+     */
+    useExperimentalScale?: boolean;
 }
 
 // --- New Types for Model-Specific Summaries ---

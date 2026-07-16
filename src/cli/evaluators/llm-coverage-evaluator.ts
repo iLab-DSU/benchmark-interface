@@ -29,8 +29,9 @@ const DEFAULT_JUDGE_CONCURRENCY = 20;
 
 type Logger = ReturnType<typeof getConfig>['logger'];
 
-// Global override to force experimental classification scale
-const FORCE_EXPERIMENTAL = true;
+// The 9-point experimental scale is the platform default. Blueprints can opt
+// back into the classic 5-point scale with `useExperimentalScale: false`.
+const USE_EXPERIMENTAL_SCALE_BY_DEFAULT = true;
 
 type ClassificationScaleItem = { name: string; score: number; description: string };
 
@@ -108,9 +109,9 @@ export class LLMCoverageEvaluator implements Evaluator {
         this.logger = logger;
         this.useCache = useCache;
         this.logger.info(`[LLMCoverageEvaluator] Initialized (Pointwise evaluation is now default). Caching: ${this.useCache}`);
-        const defaultScale = FORCE_EXPERIMENTAL ? EXPERIMENTAL_CLASSIFICATION_SCALE : CLASSIFICATION_SCALE;
-        const strategyLabel = FORCE_EXPERIMENTAL ? 'EXPERIMENTAL (FORCED)' : 'DEFAULT';
-        this.logger.info(`[LLMCoverageEvaluator] Classification scale default: ${strategyLabel}; size=${defaultScale.length}`);
+        const defaultScale = USE_EXPERIMENTAL_SCALE_BY_DEFAULT ? EXPERIMENTAL_CLASSIFICATION_SCALE : CLASSIFICATION_SCALE;
+        const strategyLabel = USE_EXPERIMENTAL_SCALE_BY_DEFAULT ? 'EXPERIMENTAL' : 'DEFAULT';
+        this.logger.info(`[LLMCoverageEvaluator] Classification scale default: ${strategyLabel}; size=${defaultScale.length} (per-blueprint override: useExperimentalScale)`);
     }
 
     getMethodName(): EvaluationMethod { return 'llm-coverage'; }
@@ -253,7 +254,6 @@ export class LLMCoverageEvaluator implements Evaluator {
         promptContextText: string,
         suiteDescription: string | undefined,
         judges?: Judge[],
-        judgeMode?: 'failover' | 'consensus', // Legacy
         classificationScale: ClassificationScaleItem[] = CLASSIFICATION_SCALE,
         providerLimiters?: Map<string, { adaptive: AdaptiveRateLimiter; limit: ReturnType<typeof pLimit> }>,
     ): Promise<JudgeResult> {
@@ -957,11 +957,11 @@ Output: <reflection>The text mentions empathy, which means the criterion is MET 
             }
 
             const llmCoverageConfig = config.evaluationConfig?.['llm-coverage'] as LLMCoverageEvaluationConfig | undefined;
-            const classificationScale = (FORCE_EXPERIMENTAL || llmCoverageConfig?.useExperimentalScale)
+            const usingExperimental = llmCoverageConfig?.useExperimentalScale ?? USE_EXPERIMENTAL_SCALE_BY_DEFAULT;
+            const classificationScale = usingExperimental
                 ? EXPERIMENTAL_CLASSIFICATION_SCALE
                 : CLASSIFICATION_SCALE;
-            const usingExperimental = classificationScale === EXPERIMENTAL_CLASSIFICATION_SCALE;
-            const reason = FORCE_EXPERIMENTAL ? 'FORCE_EXPERIMENTAL=true' : (llmCoverageConfig?.useExperimentalScale ? 'per-blueprint flag' : 'default');
+            const reason = llmCoverageConfig?.useExperimentalScale !== undefined ? 'per-blueprint flag' : 'default';
             this.logger.info(`[LLMCoverageEvaluator] Using ${usingExperimental ? 'EXPERIMENTAL' : 'DEFAULT'} classification scale (${reason}) for prompt ${promptData.promptId}; size=${classificationScale.length}`);
 
             for (const [modelId, responseData] of Object.entries(promptData.modelResponses)) {
@@ -1025,7 +1025,6 @@ Output: <reflection>The text mentions empathy, which means the criterion is MET 
                                     transcriptForModel,
                                     config.description,
                                     llmCoverageConfig?.judges,
-                                    llmCoverageConfig?.judgeMode,
                                     classificationScale,
                                     providerLimiters
                                 );
