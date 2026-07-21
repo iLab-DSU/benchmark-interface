@@ -277,14 +277,20 @@ export const EvaluationView: React.FC<{
             }
         });
 
+        const isEvaluated = (a: PointAssessment) =>
+            a.coverageExtent !== undefined && a.coverageExtent !== null && !isNaN(a.coverageExtent);
+
         const categorize = (list: PointAssessment[]) => {
             const criticalFailures: PointAssessment[] = [];
             const majorGaps: PointAssessment[] = [];
             const passed: PointAssessment[] = [];
+            const notEvaluated: PointAssessment[] = [];
             list.forEach(a => {
-                if (a.isInverted && a.coverageExtent !== undefined && a.coverageExtent < 0.7) {
+                if (!isEvaluated(a)) {
+                    notEvaluated.push(a);
+                } else if (a.isInverted && a.coverageExtent! < 0.7) {
                     criticalFailures.push(a);
-                } else if (!a.isInverted && a.coverageExtent !== undefined && a.coverageExtent < 0.4) {
+                } else if (!a.isInverted && a.coverageExtent! < 0.4) {
                     majorGaps.push(a);
                 } else {
                     passed.push(a);
@@ -293,7 +299,7 @@ export const EvaluationView: React.FC<{
             criticalFailures.sort((a,b) => (a.coverageExtent ?? 1) - (b.coverageExtent ?? 1));
             majorGaps.sort((a,b) => (a.coverageExtent ?? 1) - (b.coverageExtent ?? 1));
             passed.sort((a,b) => (b.coverageExtent ?? 0) - (a.coverageExtent ?? 0));
-            return { criticalFailures, majorGaps, passed };
+            return { criticalFailures, majorGaps, passed, notEvaluated };
         };
 
         return {
@@ -323,7 +329,7 @@ export const EvaluationView: React.FC<{
         })
     );
 
-    const renderCategorizedAssessments = (categorized: { criticalFailures: PointAssessment[], majorGaps: PointAssessment[], passed: PointAssessment[] }) => (
+    const renderCategorizedAssessments = (categorized: { criticalFailures: PointAssessment[], majorGaps: PointAssessment[], passed: PointAssessment[], notEvaluated: PointAssessment[] }) => (
         <>
             {categorized.criticalFailures.length > 0 && (
                 <div>
@@ -347,6 +353,14 @@ export const EvaluationView: React.FC<{
                         <Icon name="check-circle" className="h-5 w-5 mr-2" /> Passed Criteria ({categorized.passed.length})
                     </h4>
                     <div className="space-y-3 my-4">{renderAssessmentList(categorized.passed)}</div>
+                </div>
+            )}
+            {categorized.notEvaluated.length > 0 && (
+                <div>
+                    <h4 className="font-bold text-base text-muted-foreground flex items-center" title="These criteria could not be scored — the judge(s) failed or produced no valid classification. They are neither passed nor failed.">
+                        <Icon name="help-circle" className="h-5 w-5 mr-2" /> Not Evaluated ({categorized.notEvaluated.length})
+                    </h4>
+                    <div className="space-y-3 my-4">{renderAssessmentList(categorized.notEvaluated)}</div>
                 </div>
             )}
         </>
@@ -520,9 +534,9 @@ export const EvaluationView: React.FC<{
                         )}
                     </div>
                     <div className="space-y-4">
-                        {renderCategorizedAssessments({ 
+                        {renderCategorizedAssessments({
                             criticalFailures: [
-                                ...requiredPoints.criticalFailures, 
+                                ...requiredPoints.criticalFailures,
                                 ...alternativePaths.flatMap(p => p.criticalFailures)
                             ],
                             majorGaps: [
@@ -532,6 +546,10 @@ export const EvaluationView: React.FC<{
                             passed: [
                                 ...requiredPoints.passed,
                                 ...alternativePaths.flatMap(p => p.passed)
+                            ],
+                            notEvaluated: [
+                                ...requiredPoints.notEvaluated,
+                                ...alternativePaths.flatMap(p => p.notEvaluated)
                             ]
                         })}
                         {assessments.length === 0 && (
@@ -707,7 +725,7 @@ export const EvaluationView: React.FC<{
                     </div>
                 )}
                 <div className="custom-scrollbar min-h-0 flex-grow space-y-3 overflow-y-auto pr-2 pt-2">
-                    {(requiredPoints.criticalFailures.length > 0 || requiredPoints.majorGaps.length > 0 || requiredPoints.passed.length > 0) && (
+                    {(requiredPoints.criticalFailures.length > 0 || requiredPoints.majorGaps.length > 0 || requiredPoints.passed.length > 0 || requiredPoints.notEvaluated.length > 0) && (
                         <div className="mb-4">
                             {/* <h4 className="font-bold text-base text-primary flex items-center mb-2">
                                 Required Criteria
