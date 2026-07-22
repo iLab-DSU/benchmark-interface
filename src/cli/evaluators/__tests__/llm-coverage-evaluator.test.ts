@@ -398,7 +398,7 @@ describe('LLMCoverageEvaluator', () => {
             } else {
                 // No primary successes + backup fails → total failure
                 expect(assessment.coverageExtent).toBeUndefined();
-                expect(assessment.error).toBe('All judges failed in consensus mode.');
+                expect(assessment.error).toMatch(/^All \d+ judge\(s\) failed in consensus mode\. Reasons: /);
                 expect(assessment.individualJudgements).toBeUndefined();
                 expect(assessment.reflection).toBeUndefined();
             }
@@ -441,7 +441,8 @@ describe('LLMCoverageEvaluator', () => {
 
             // Should have been called times: primary judges + 1 backup
             expect(requestIndividualJudgeSpy).toHaveBeenCalledTimes(DEFAULT_JUDGES.length + 1);
-            expect(assessment.error).toBe('All judges failed in consensus mode.');
+            expect(assessment.error).toMatch(/^All \d+ judge\(s\) failed in consensus mode\. Reasons: /);
+            expect(assessment.error).toContain('All judges failed'); // sample from the mocked reason
             expect(assessment.coverageExtent).toBeUndefined();
             expect(assessment.judgeModelId).toBeUndefined();
         });
@@ -532,8 +533,8 @@ describe('LLMCoverageEvaluator', () => {
             
             const result = await evaluator.evaluate([input]);
             const assessment = (result.llmCoverageScores?.['prompt-all-fail']?.['model1'] as any)?.pointAssessments[0];
-            
-            expect(assessment.error).toBe('All judges failed in consensus mode.');
+
+            expect(assessment.error).toMatch(/^All \d+ judge\(s\) failed in consensus mode\. Reasons: /);
             expect(assessment.coverageExtent).toBeUndefined();
             expect(assessment.judgeModelId).toBeUndefined();
         });

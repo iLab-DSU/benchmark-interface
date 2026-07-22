@@ -100,6 +100,46 @@ interface JudgeResult {
 
 const CALL_TIMEOUT_MS_POINTWISE = 45000;
 
+/**
+ * Build a short human-readable summary of why every judge failed, so operators
+ * can distinguish rate-limit vs auth vs parse errors from the results UI.
+ * Groups by failure category and lists which judges hit each.
+ */
+function summarizeJudgeFailures(
+    failures: Array<{ judgeId: string; model: string; reason: string }>
+): string {
+    if (failures.length === 0) return '';
+
+    const categorize = (reason: string): string => {
+        const r = reason.toLowerCase();
+        if (r.includes('rate limit') || r.includes('429')) return 'rate-limited';
+        if (r.includes('401') || r.includes('403') || r.includes('unauthorized') || r.includes('forbidden')) return 'auth error';
+        if (r.includes('timeout') || r.includes('timed out')) return 'timeout';
+        if (r.includes('failed to parse xml') || r.includes('invalid classification')) return 'unparseable response';
+        if (r.includes('empty response')) return 'empty response';
+        if (r.includes('client/network error')) return 'network error';
+        if (r.includes('502') || r.includes('503') || r.includes('504')) return 'upstream gateway error';
+        return 'other';
+    };
+
+    const buckets = new Map<string, Array<{ judgeId: string; sample: string }>>();
+    for (const f of failures) {
+        const cat = categorize(f.reason);
+        if (!buckets.has(cat)) buckets.set(cat, []);
+        buckets.get(cat)!.push({ judgeId: f.judgeId, sample: f.reason });
+    }
+
+    const parts: string[] = [];
+    for (const [cat, entries] of buckets) {
+        const judgeList = entries.map(e => e.judgeId).join(', ');
+        // Include one sample reason to help distinguish edge cases inside a category.
+        const sample = entries[0]?.sample?.slice(0, 120);
+        parts.push(`${cat} (${judgeList}${sample && cat === 'other' ? `: ${sample}` : ''})`);
+    }
+
+    return `Reasons: ${parts.join('; ')}.`;
+}
+
 export class LLMCoverageEvaluator implements Evaluator {
     private logger: Logger;
     private useCache: boolean;
@@ -259,6 +299,8 @@ export class LLMCoverageEvaluator implements Evaluator {
     ): Promise<JudgeResult> {
         const judgeLog: string[] = [];
         const successfulJudgements: (PointwiseCoverageLLMResult & { judgeModelId: string })[] = [];
+        // Track per-judge failure reasons so we can surface them if all judges fail.
+        const judgeFailures: Array<{ judgeId: string; model: string; reason: string }> = [];
 
         // Determine which judges to use
         let judgesToUse: Judge[];
@@ -298,9 +340,11 @@ export class LLMCoverageEvaluator implements Evaluator {
                 );
 
                 if ('error' in singleEvalResult) {
-                    judgeLog.push(`[${judgeIdentifier}] FAILED: ${singleEvalResult.error}`);
+                    const reason = singleEvalResult.error ?? 'unknown error';
+                    judgeLog.push(`[${judgeIdentifier}] FAILED: ${reason}`);
+                    judgeFailures.push({ judgeId: judgeIdentifier, model: judge.model, reason });
                     // Check if it's a rate limit error
-                    if (singleEvalResult.error?.includes('rate limit') || singleEvalResult.error?.includes('429')) {
+                    if (reason.includes('rate limit') || reason.includes('429')) {
                         adaptiveLimiter?.onRateLimit();
                     } else {
                         adaptiveLimiter?.onError();
@@ -328,11 +372,15 @@ export class LLMCoverageEvaluator implements Evaluator {
             judges,
             judgeLog,
             classificationScale,
-            providerLimiters
+            providerLimiters,
+            judgeFailures,
         );
 
         if (successfulJudgements.length === 0) {
-            const errorMsg = "All judges failed in consensus mode.";
+            const summary = summarizeJudgeFailures(judgeFailures);
+            const errorMsg = judgeFailures.length > 0
+                ? `All ${judgeFailures.length} judge(s) failed in consensus mode. ${summary}`
+                : 'All judges failed in consensus mode.';
             this.logger.warn(`[LLMCoverageEvaluator-Pointwise] --- ${errorMsg}`);
             judgeLog.push(`FINAL_ERROR: ${errorMsg}`);
             return { error: errorMsg, judgeLog };
@@ -381,6 +429,7 @@ export class LLMCoverageEvaluator implements Evaluator {
         judgeLog: string[] = [],
         classificationScale: ClassificationScaleItem[] = CLASSIFICATION_SCALE,
         providerLimiters?: Map<string, { adaptive: AdaptiveRateLimiter; limit: ReturnType<typeof pLimit> }>,
+        judgeFailures?: Array<{ judgeId: string; model: string; reason: string }>,
     ): Promise<boolean> {
         // Only use backup judge if we have fewer successful judgements than expected 
         // and we're not using custom judges (to preserve user configurations)
@@ -412,9 +461,11 @@ export class LLMCoverageEvaluator implements Evaluator {
         );
 
         if ('error' in backupEvalResult) {
-            judgeLog.push(`[${backupJudgeIdentifier}] BACKUP FAILED: ${backupEvalResult.error}`);
+            const reason = backupEvalResult.error ?? 'unknown error';
+            judgeLog.push(`[${backupJudgeIdentifier}] BACKUP FAILED: ${reason}`);
+            judgeFailures?.push({ judgeId: backupJudgeIdentifier, model: DEFAULT_BACKUP_JUDGE.model, reason });
             // Check if it's a rate limit error
-            if (backupEvalResult.error?.includes('rate limit') || backupEvalResult.error?.includes('429')) {
+            if (reason.includes('rate limit') || reason.includes('429')) {
                 backupAdaptiveLimiter?.onRateLimit();
             } else {
                 backupAdaptiveLimiter?.onError();
@@ -1042,6 +1093,9 @@ Output: <reflection>The text mentions empathy, which means the criterion is MET 
                                     error: judgeResult.error,
                                     individualJudgements: judgeResult.individualJudgements,
                                     judgeModelId: judgeResult.judgeModelId,
+                                    // Surface the per-point judge log so operators can diagnose
+                                    // consensus failures (rate limits, parse errors, etc.) from the UI.
+                                    judgeLog: judgeResult.error ? judgeResult.judgeLog : undefined,
                                     multiplier: point.multiplier,
                                     citation: point.citation,
                                     isInverted: point.isInverted,

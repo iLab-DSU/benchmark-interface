@@ -91,14 +91,86 @@ const ModelCard: React.FC<ModelCardProps> = ({ modelId, promptCoverageScores, pr
         return bundles;
     }, [relatedIds, promptCoverageScores, promptResponses, historiesForPrompt]);
 
+    // If no valid variants, diagnose why and surface a specific message
+    // instead of the generic "Error loading evaluation data for this model."
+    const emptyStateDiagnosis = useMemo(() => {
+        if (tempVariants.length > 0) return null;
+
+        const covErrors = new Set<string>();
+        let hasAnyCoverage = false;
+        let hasAnyResponse = false;
+        let hasEmptyCoverage = false;
+
+        relatedIds.forEach(mId => {
+            const cov = promptCoverageScores[mId];
+            const resp = promptResponses[mId];
+            if (cov) {
+                hasAnyCoverage = true;
+                if ('error' in cov && cov.error) {
+                    covErrors.add(cov.error);
+                } else if (!('error' in cov) && !((cov as any).pointAssessments?.length)) {
+                    hasEmptyCoverage = true;
+                }
+            }
+            if (resp !== undefined) hasAnyResponse = true;
+        });
+
+        // Prefer specific coverage errors when we have them.
+        if (covErrors.size > 0) {
+            const messages = Array.from(covErrors);
+            const isGenerationFailure = messages.some(m => /^Generation failed/i.test(m));
+            return {
+                title: isGenerationFailure
+                    ? 'The model failed to generate a response.'
+                    : 'The response could not be evaluated.',
+                details: messages,
+                showResponses: hasAnyResponse && !isGenerationFailure,
+            };
+        }
+
+        if (!hasAnyResponse && !hasAnyCoverage) {
+            return {
+                title: 'No evaluation data for this model.',
+                details: ['The model did not produce a response and no coverage record was written for this scenario.'],
+                showResponses: false,
+            };
+        }
+
+        if (!hasAnyResponse) {
+            return {
+                title: 'The model failed to generate a response.',
+                details: ['No response text was recorded for this model on this scenario.'],
+                showResponses: false,
+            };
+        }
+
+        if (hasEmptyCoverage) {
+            return {
+                title: 'The response could not be evaluated.',
+                details: ['A coverage record exists but contains no criterion assessments.'],
+                showResponses: hasAnyResponse,
+            };
+        }
+
+        return {
+            title: 'Evaluation data is unavailable for this model.',
+            details: ['The results page could not build a valid view from the underlying data.'],
+            showResponses: false,
+        };
+    }, [tempVariants.length, relatedIds, promptCoverageScores, promptResponses]);
+
     if (tempVariants.length === 0) {
+        const diag = emptyStateDiagnosis!;
         return (
             <Card className="h-full w-full border-dashed border-destructive/50">
                 <CardHeader>
                     <CardTitle>{getModelDisplayLabel(modelId)}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <p className="text-destructive">Error loading evaluation data for this model.</p>
+                <CardContent className="space-y-2">
+                    <p className="text-destructive font-medium">{diag.title}</p>
+                    {diag.details.map((d, i) => (
+                        <p key={i} className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{d}</p>
+                    ))}
                 </CardContent>
             </Card>
         );
