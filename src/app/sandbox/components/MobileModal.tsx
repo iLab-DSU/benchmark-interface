@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useMobile } from '../hooks/useMobile';
+import { useMobile } from '@/hooks/useMobile';
 
 interface MobileModalProps {
   isOpen: boolean;

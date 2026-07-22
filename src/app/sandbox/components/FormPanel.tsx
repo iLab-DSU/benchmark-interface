@@ -25,7 +25,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import Icon from '@/components/ui/icon';
-import { useMobile } from '../hooks/useMobile';
+import { useMobile } from '@/hooks/useMobile';
 
 interface FormPanelProps {
     parsedBlueprint: ComparisonConfig | null;

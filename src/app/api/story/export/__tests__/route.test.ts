@@ -15,7 +15,7 @@ vi.mock('@/utils/logger', () => ({
     error: vi.fn(),
   })),
 }));
-vi.mock('@/app/sandbox/utils/yaml-generator', () => ({
+vi.mock('@/lib/yaml-generator', () => ({
   generateMinimalBlueprintYaml: vi.fn((obj) => `# Generated YAML\ntitle: ${obj.title || 'Test'}`),
 }));
 

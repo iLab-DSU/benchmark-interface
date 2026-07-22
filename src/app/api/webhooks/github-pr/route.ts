@@ -6,7 +6,11 @@ import { callBackgroundFunction } from '@/lib/background-function-client';
 import { prEvaluationLimiter, webhookIPLimiter, webhookGlobalLimiter } from '@/lib/webhook-rate-limiter';
 import { checkPREvalLimits, formatLimitViolations, PR_EVAL_LIMITS } from '@/lib/pr-eval-limiter';
 import { validateReservedPrefixes } from '@/lib/blueprint-parser';
+import { validateBlueprintSchema } from '@/lib/blueprint-validator';
+import { formatSchemaErrors } from '@/lib/blueprint-ingestion';
 import { generateBlueprintIdFromPath, validateBlueprintId } from '@/app/utils/blueprintIdUtils';
+import type { ComparisonConfig } from '@/cli/types/cli_types';
+import type { ErrorObject } from 'ajv';
 
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 const UPSTREAM_OWNER = 'weval-org';
@@ -432,8 +436,25 @@ export async function POST(req: NextRequest) {
 
       // Parse blueprint for limit checking using the proper parser
       // This handles all multi-document formats correctly
-      const { parseAndNormalizeBlueprint } = await import('@/lib/blueprint-parser');
-      const config = parseAndNormalizeBlueprint(content, 'yaml');
+      let config: ComparisonConfig;
+      try {
+        const { parseAndNormalizeBlueprint } = await import('@/lib/blueprint-parser');
+        config = parseAndNormalizeBlueprint(content, 'yaml');
+      } catch (parseError: any) {
+        validationErrors.push({ filename: file.filename, error: `Parse error: ${parseError.message}` });
+        continue;
+      }
+
+      // Fail fast on canonical-schema violations so contributors get
+      // actionable feedback at PR time instead of a burned staging run.
+      const schemaCheck = validateBlueprintSchema(config, 'canonical');
+      if (!schemaCheck.valid) {
+        validationErrors.push({
+          filename: file.filename,
+          error: `Schema validation failed: ${formatSchemaErrors(schemaCheck.errors as ErrorObject[] | null)}`,
+        });
+        continue;
+      }
 
       // Check PR evaluation limits
       // Note: checkPREvalLimits doesn't need auth for public model collections

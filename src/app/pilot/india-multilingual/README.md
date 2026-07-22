@@ -216,7 +216,6 @@ src/app/pilot/india-multilingual/
 │   ├── MethodologyNotes.tsx    # Technical notes
 │   ├── DataExplorer.tsx        # Browse 350 stratified samples
 │   └── Footer.tsx              # Credits
-└── _archive_v1/                # Archived original v1 implementation
 ```
 
 **Key Features**:

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveJsonFile, getJsonFile } from '@/lib/storageService';
-import { generateMinimalBlueprintYaml } from '@/app/sandbox/utils/yaml-generator';
+import { generateMinimalBlueprintYaml } from '@/lib/yaml-generator';
 import { getLogger } from '@/utils/logger';
 import { z } from 'zod';
 import type { ComparisonConfig } from '@/cli/types/cli_types';

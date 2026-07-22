@@ -4,6 +4,9 @@ import crypto from 'crypto';
 import { callBackgroundFunction } from '@/lib/background-function-client';
 import { webhookIPLimiter, webhookGlobalLimiter } from '@/lib/webhook-rate-limiter';
 import { generateConfigContentHash } from '@/lib/hash-utils';
+import { parseSubmittedBlueprint } from '@/lib/blueprint-ingestion';
+import { resolveModelsInConfig } from '@/lib/blueprint-service';
+import { ComparisonConfig } from '@/cli/types/cli_types';
 import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
 
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
@@ -152,35 +155,6 @@ async function hasBeenEvaluated(configId: string, contentHash: string): Promise<
     }
     console.error('[GitHub Push Webhook] Error checking S3:', error.message);
     throw error;
-  }
-}
-
-/**
- * Parse and validate blueprint
- */
-async function parseBlueprint(content: string): Promise<any | null> {
-  try {
-    const yaml = await import('js-yaml');
-    const parsed = yaml.load(content);
-
-    if (!parsed || typeof parsed !== 'object') {
-      return null;
-    }
-
-    const config = parsed as any;
-
-    if (!config.id || typeof config.id !== 'string') {
-      return null;
-    }
-
-    if (!config.prompts || !Array.isArray(config.prompts) || config.prompts.length === 0) {
-      return null;
-    }
-
-    return config;
-  } catch (error: any) {
-    console.error('[GitHub Push Webhook] Parse error:', error.message);
-    return null;
   }
 }
 
@@ -334,20 +308,40 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // Parse blueprint
-      const config = await parseBlueprint(content);
-      if (!config) {
-        console.error(`[GitHub Push Webhook] Invalid blueprint: ${file.filename}`);
-        results.errors.push(`${file.filename}: Invalid blueprint structure`);
+      // Parse with the canonical parser (multi-document YAML, path-derived ID,
+      // canonical schema validation) so merged blueprints behave identically
+      // to the PR-staging and scheduled-eval ingestion paths.
+      const parsed = parseSubmittedBlueprint(content, file.filename);
+      for (const warning of parsed.warnings) {
+        console.warn(`[GitHub Push Webhook] ${file.filename}: ${warning}`);
+      }
+      if (!parsed.config) {
+        console.error(`[GitHub Push Webhook] Invalid blueprint ${file.filename}: ${parsed.error}`);
+        results.errors.push(`${file.filename}: ${parsed.error}`);
         continue;
       }
 
-      // Calculate content hash
-      const modelIds = config.models?.map((m: any) => typeof m === 'string' ? m : m.id) || [];
-      const contentHash = generateConfigContentHash({ ...config, models: modelIds });
+      // Resolve model collections (e.g. CORE) before hashing so the dedupe
+      // hash matches the scheduled-eval path, which hashes the resolved config.
+      let config: ComparisonConfig;
+      try {
+        config = await resolveModelsInConfig(parsed.config, GITHUB_TOKEN);
+      } catch (error: any) {
+        results.errors.push(`${file.filename}: Failed to resolve model collections: ${error.message}`);
+        continue;
+      }
+      if (!config.models || config.models.length === 0) {
+        results.errors.push(`${file.filename}: No models remain after collection resolution`);
+        continue;
+      }
+
+      const contentHash = generateConfigContentHash(config);
+
+      // parseSubmittedBlueprint always sets a path-derived id
+      const configId = config.id!;
 
       // Check if already evaluated
-      const alreadyEvaluated = await hasBeenEvaluated(config.id, contentHash);
+      const alreadyEvaluated = await hasBeenEvaluated(configId, contentHash);
 
       if (alreadyEvaluated) {
         console.log(`[GitHub Push Webhook] Blueprint ${config.id} already evaluated (hash: ${contentHash})`);

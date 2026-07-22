@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { parseWevalConfigFromResponse } from '@/app/sandbox/utils/json-response-parser';
+import { parseWevalConfigFromResponse } from '@/lib/json-response-parser';
 
 // Mock the LLM service
 vi.mock('@/cli/services/llm-service', () => ({
@@ -10,7 +10,7 @@ vi.mock('@/cli/utils/response-utils', () => ({
   checkForErrors: vi.fn(() => false)
 }));
 
-vi.mock('@/app/sandbox/utils/yaml-generator', () => ({
+vi.mock('@/lib/yaml-generator', () => ({
   generateMinimalBlueprintYaml: vi.fn((config) => `title: "${config.title}"\ndescription: "${config.description}"`)
 }));
 

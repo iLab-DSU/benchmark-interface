@@ -16,6 +16,7 @@ import {
 import { Readable } from 'stream';
 import {
   calculateStandardDeviation,
+  IDEAL_MODEL_ID,
 } from '@/app/utils/calculationUtils';
 import {
   EnhancedComparisonConfigInfo,
@@ -959,8 +960,26 @@ export async function saveResult(configId: string, fileNameWithTimestamp: string
         return out;
       };
       clone.allFinalAssistantResponses = buildPlaceholderMatrix();
-      // Reset excludedModels; will be recalculated client-side based on artefacts
-      if (clone.excludedModels) delete clone.excludedModels;
+      // Compute excludedModels while the full response text is still available:
+      // models missing a response (or returning only whitespace) for any prompt.
+      // The client cannot derive this from core.json, whose response matrices
+      // are null placeholders.
+      {
+        const responses = full.allFinalAssistantResponses || {};
+        const promptIdsForExclusion: string[] = full.promptIds || Object.keys(responses);
+        const excluded = new Set<string>(Array.isArray(full.excludedModels) ? full.excludedModels : []);
+        for (const modelId of (full.effectiveModels || []) as string[]) {
+          if (modelId === IDEAL_MODEL_ID || excluded.has(modelId)) continue;
+          for (const promptId of promptIdsForExclusion) {
+            const text = responses[promptId]?.[modelId];
+            if (text === undefined || (typeof text === 'string' && text.trim() === '')) {
+              excluded.add(modelId);
+              break;
+            }
+          }
+        }
+        clone.excludedModels = Array.from(excluded);
+      }
       clone.fullConversationHistories = buildPlaceholderMatrix();
       // Trim coverage scores (retain essential fields & lightweight point assessments)
       const llmCoverage = full.evaluationResults?.llmCoverageScores || {};

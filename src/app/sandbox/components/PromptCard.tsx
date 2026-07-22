@@ -26,7 +26,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMobile } from '../hooks/useMobile';
+import { useMobile } from '@/hooks/useMobile';
 import Icon from '@/components/ui/icon';
 
 type PromptConfig = WevalPromptConfig;

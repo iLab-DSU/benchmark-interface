@@ -10,6 +10,7 @@ import {
   PR_EVAL_LIMITS,
   checkPREvalLimits,
   applyPREvalLimits,
+  sampleEvenlySpaced,
   formatLimitViolations,
 } from '../pr-eval-limiter';
 import { ComparisonConfig } from '@/cli/types/cli_types';
@@ -381,18 +382,20 @@ describe('applyPREvalLimits', () => {
     });
   });
 
-  it('should trim prompts to maxPrompts', async () => {
+  it('should trim prompts to maxPrompts by sampling evenly across the blueprint', async () => {
     const config: ComparisonConfig = {
       id: 'test',
-      prompts: Array(50).fill({ user: 'test prompt' }),
+      prompts: Array.from({ length: 50 }, (_, i) => ({ id: `p${i}`, user: `test prompt ${i}` })) as any,
       models: ['openai:gpt-4'],
     };
 
     const trimmed = await applyPREvalLimits(config);
 
     expect(trimmed.prompts?.length).toBe(10);
-    // Should keep first 10
-    expect(trimmed.prompts).toEqual(config.prompts?.slice(0, 10));
+    // Evenly spaced across all 50 prompts (step 5), not just the first 10
+    expect((trimmed.prompts as any[]).map(p => p.id)).toEqual(
+      ['p0', 'p5', 'p10', 'p15', 'p20', 'p25', 'p30', 'p35', 'p40', 'p45']
+    );
   });
 
   it('should not modify prompts within limit', async () => {
@@ -573,5 +576,32 @@ describe('formatLimitViolations', () => {
     expect(message).toContain(`Max system prompts: ${PR_EVAL_LIMITS.maxSystemPrompts}`);
     expect(message).toContain(`Max total responses: ${PR_EVAL_LIMITS.maxTotalResponses}`);
     expect(message).toContain(`Allowed model collections: ${PR_EVAL_LIMITS.allowedModelCollections.join(', ')}`);
+  });
+});
+
+describe('sampleEvenlySpaced', () => {
+  it('returns the input unchanged when already within the count', () => {
+    expect(sampleEvenlySpaced([1, 2, 3], 10)).toEqual([1, 2, 3]);
+    expect(sampleEvenlySpaced([1, 2, 3], 3)).toEqual([1, 2, 3]);
+  });
+
+  it('returns an empty list for non-positive counts', () => {
+    expect(sampleEvenlySpaced([1, 2, 3], 0)).toEqual([]);
+  });
+
+  it('samples unique, in-order items spread across the list', () => {
+    const items = Array.from({ length: 137 }, (_, i) => i);
+    const sampled = sampleEvenlySpaced(items, 10);
+
+    expect(sampled.length).toBe(10);
+    expect(new Set(sampled).size).toBe(10); // no duplicates
+    expect([...sampled].sort((a, b) => a - b)).toEqual(sampled); // preserves order
+    expect(sampled[0]).toBe(0); // covers the start
+    expect(sampled[sampled.length - 1]).toBeGreaterThanOrEqual(items.length - Math.ceil(items.length / 10)); // reaches the tail
+  });
+
+  it('is deterministic for identical inputs', () => {
+    const items = Array.from({ length: 42 }, (_, i) => `p${i}`);
+    expect(sampleEvenlySpaced(items, 10)).toEqual(sampleEvenlySpaced(items, 10));
   });
 });
