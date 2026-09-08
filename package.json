@@ -27,8 +27,6 @@
     "test:e2e:report": "playwright show-report",
     "pr:screenshots": "node scripts/pr-screenshots.mjs",
     "cli": "tsx --no-cache -r ./src/cli/env-loader.js src/cli/index.ts",
-    "cli:generate-pain-points": "pnpm cli generate-pain-points",
-    "cli:annotate-pain-points": "pnpm cli annotate-pain-points",
     "cli:generate-regressions": "pnpm cli generate-regressions",
     "prep-macro": "pnpm cli prep-macro",
     "cli:backfill-summary": "pnpm cli backfill-summary",

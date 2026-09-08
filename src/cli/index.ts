@@ -42,8 +42,6 @@ import { demoExampleWithFixturesCommand } from './commands/demo-example-with-fix
 import { prepMacroCommand } from './commands/prep-macro';
 import { litRoundCommand } from './commands/lit-round';
 import { backfillArticleCommand } from './commands/backfill-article';
-import { generatePainPointsCommand } from './commands/generate-pain-points';
-import { annotatePainPointsCommand } from './commands/annotate-pain-points';
 import { generateRegressionsCommand } from './commands/generate-regressions';
 import { backfillGranularResponsesCommand } from './commands/backfill-granular-responses';
 import { authorDistanceCommand } from './commands/author-distance';
@@ -130,8 +128,6 @@ cli.addCommand(generateCompassIndexCommand);
 cli.addCommand(demoExampleWithFixturesCommand);
 cli.addCommand(prepMacroCommand);
 cli.addCommand(litRoundCommand);
-cli.addCommand(generatePainPointsCommand);
-cli.addCommand(annotatePainPointsCommand);
 cli.addCommand(generateRegressionsCommand);
 cli.addCommand(backfillGranularResponsesCommand);
 cli.addCommand(authorDistanceCommand);
