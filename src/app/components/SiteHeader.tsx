@@ -15,10 +15,6 @@ export function SiteHeader() {
           </Link>
           <div className="flex items-center space-x-6">
             <nav className="flex items-center space-x-6">
-              <Link href="/about" className="relative group text-sm font-medium text-foreground hover:text-foreground/70 transition-colors py-1">
-                About
-                <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-foreground transition-all duration-300 ease-out group-hover:w-full" />
-              </Link>
               <a
                 href={`${APP_REPO_URL}/blob/main/docs/METHODOLOGY.md`}
                 target="_blank"

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { ANALYSIS_PATH } from './tests/e2e/fixtures/constants';
 import { existsSync } from 'node:fs';
 
 /**
@@ -49,14 +50,18 @@ export default defineConfig({
   /**
    * When E2E_BASE_URL is set we assume the app is already running (e.g. a
    * production build or a remote deploy) and skip booting a dev server.
-   * Otherwise boot `pnpm dev`; the readiness probe hits /about — a static,
-   * dependency-free route — which also pre-compiles it so the first test is fast.
+   * Otherwise boot `pnpm dev`; the readiness probe hits the seeded analysis
+   * run, which globalSetup writes to `.results/` before the server starts, and
+   * which pre-compiles the route the specs use so the first test is fast.
+   *
+   * This previously probed /about. That page was removed with the rest of the
+   * public site, which left the probe waiting on a 404 until it timed out.
    */
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
         command: 'pnpm dev',
-        url: `http://localhost:${PORT}/about`,
+        url: `http://localhost:${PORT}${ANALYSIS_PATH}`,
         reuseExistingServer: !process.env.CI,
         timeout: 180_000,
         stdout: 'pipe',

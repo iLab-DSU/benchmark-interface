@@ -11,7 +11,8 @@ pnpm test:e2e:report   # open the last HTML report
 ```
 
 You don't need to start the dev server yourself — `playwright.config.ts` has a
-`webServer` block that boots `pnpm dev` and waits for `/about` to respond. If a
+`webServer` block that boots `pnpm dev` and waits for the seeded analysis run
+to respond. If a
 dev server is already running on `:3172` it is reused (locally).
 
 To run against an already-running app (e.g. a production build or a deployed
@@ -30,15 +31,14 @@ E2E_BASE_URL=https://your-preview.example.com pnpm test:e2e
 
 ## What's safe to test here
 
-Two kinds of routes are covered:
+The public site (the homepage, `/about`, `/latest`, `/vibes`, …) was removed in
+this fork, and the specs that covered it went with it. What remains:
 
-1. **Statically rendered, dependency-free routes** (`/about`,
-   `/what-is-an-eval`, …) — see `smoke.spec.ts`. These need no data at all.
+**Data-driven routes** (`/analysis/*`) — see `analysis.spec.ts`. These read from
+storage but do **not** call LLMs at render time, so they work against seeded
+local fixtures without any secrets or network.
 
-2. **Data-driven routes** (the homepage `/`, `/latest`, `/analysis/*`) — see
-   `homepage.spec.ts`, `latest.spec.ts`, `analysis.spec.ts`. These read from
-   storage but do **not** call LLMs at render time, so they work against
-   seeded local fixtures without any secrets or network.
+The authoring UI will be covered here once it exists.
 
 ### How the data-driven fixtures work
 
