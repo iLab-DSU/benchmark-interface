@@ -22,25 +22,17 @@ import { backfillPromptContextsCommand } from './commands/backfill-prompt-contex
 import { getConfig } from './config';
 import { backfillExecutiveSummaryCommand } from './commands/backfill-executive-summary';
 import { repairRunCommand } from './commands/repair-run';
-import { addToPairsCommand } from './commands/add-to-pairs';
-import { deleteFromPairsCommand } from './commands/delete-from-pairs';
 import { backupDataCommand } from './commands/backup-data';
 import { restoreDataCommand } from './commands/restore-data';
 import { listBackupsCommand } from './commands/list-backups';
 import { migrateStorageLayoutCommand } from './commands/migrate-storage-layout';
 import { migrateResultFilesCommand } from './commands/migrate-result-files';
 import { debugConfigScoresCommand } from './commands/debug-config-scores';
-import { generateCompassIndexCommand } from './commands/generate-compass-index';
 import { cloneRunCommand } from './commands/clone-run';
 import { updateRunMetadataCommand } from './commands/update-run-metadata';
 import { demoExampleWithFixturesCommand } from './commands/demo-example-with-fixtures';
-import { prepMacroCommand } from './commands/prep-macro';
-import { litRoundCommand } from './commands/lit-round';
 import { backfillArticleCommand } from './commands/backfill-article';
-import { generateRegressionsCommand } from './commands/generate-regressions';
 import { backfillGranularResponsesCommand } from './commands/backfill-granular-responses';
-import { authorDistanceCommand } from './commands/author-distance';
-import { scanUnrunBlueprintsCommand } from './commands/scan-unrun-blueprints';
 
 let isTerminating = false
 const cleanup = () => {
@@ -105,22 +97,14 @@ cli.addCommand(backfillArticleCommand);
 cli.addCommand(repairRunCommand);
 cli.addCommand(cloneRunCommand);
 cli.addCommand(updateRunMetadataCommand);
-cli.addCommand(addToPairsCommand);
-cli.addCommand(deleteFromPairsCommand);
 cli.addCommand(backupDataCommand);
 cli.addCommand(restoreDataCommand);
 cli.addCommand(listBackupsCommand);
 cli.addCommand(migrateStorageLayoutCommand);
 cli.addCommand(migrateResultFilesCommand);
 cli.addCommand(debugConfigScoresCommand);
-cli.addCommand(generateCompassIndexCommand);
 cli.addCommand(demoExampleWithFixturesCommand);
-cli.addCommand(prepMacroCommand);
-cli.addCommand(litRoundCommand);
-cli.addCommand(generateRegressionsCommand);
 cli.addCommand(backfillGranularResponsesCommand);
-cli.addCommand(authorDistanceCommand);
-cli.addCommand(scanUnrunBlueprintsCommand);
 
 cli.parseAsync(process.argv).catch(err => {
   console.error('CLI Error:', err);

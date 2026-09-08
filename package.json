@@ -27,8 +27,6 @@
     "test:e2e:report": "playwright show-report",
     "pr:screenshots": "node scripts/pr-screenshots.mjs",
     "cli": "tsx --no-cache -r ./src/cli/env-loader.js src/cli/index.ts",
-    "cli:generate-regressions": "pnpm cli generate-regressions",
-    "prep-macro": "pnpm cli prep-macro",
     "cli:backfill-summary": "pnpm cli backfill-summary",
     "cli:repair-run": "pnpm cli repair-run",
     "embed_baseline_responses": "tsx src/cli/index.ts embed_baseline_responses",
@@ -46,9 +44,7 @@
     "pre-commit": "lint-staged",
     "update-snapshots": "vitest run --update",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next",
-    "debug:story:chat": "tsx tools/debug-story-chat.ts",
-    "debug:story:redteam": "tsx tools/redteam-story-chat.ts"
+    "clean": "rm -rf .next"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.850.0",
