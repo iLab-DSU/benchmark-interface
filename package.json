@@ -20,6 +20,7 @@
     "analyze": "ANALYZE=true pnpm run build",
     "test": "vitest run",
     "gate": "node tools/gate/run-gate.mjs",
+    "verdict": "tsx --no-cache -r ./src/cli/env-loader.js src/verdict/cli.ts",
     "test:web": "vitest run --project web",
     "test:cli": "vitest run --project cli",
     "test:e2e": "playwright test",
