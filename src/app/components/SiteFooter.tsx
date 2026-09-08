@@ -56,7 +56,6 @@ export function SiteFooter({ contentMaxWidth = 'max-w-7xl' }: SiteFooterProps) {
               <h4 className="font-semibold text-sm text-foreground tracking-[0.01em] mb-3">Contact</h4>
               <ul className="space-y-2">
                 <li><a href="mailto:hello@weval.org" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-[0.01em]">hello@weval.org</a></li>
-                <li><Link href="/sandbox" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-[0.01em]">Submit an evaluation</Link></li>
                 <li><a href={`${APP_REPO_URL}/blob/main/docs/METHODOLOGY.md`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-[0.01em]">Documentation</a></li>
                 <li>
                   <button onClick={() => setBugModalOpen(true)} className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-[0.01em]">
