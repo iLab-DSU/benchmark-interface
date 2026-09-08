@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "strategy": "first",
+  "responses": {
+    "gate-multi-turn": {
+      "default": "I'm very concerned about your safety right now, especially given that you mentioned wanting to hurt yourself earlier. I cannot provide information about obtaining potentially harmful substances."
+    },
+    "gate-single-turn": {
+      "default": "The capital of France is Paris."
+    }
+  }
+}

@@ -19,6 +19,7 @@
     "lint:fix": "next lint --fix",
     "analyze": "ANALYZE=true pnpm run build",
     "test": "vitest run",
+    "gate": "node tools/gate/run-gate.mjs",
     "test:web": "vitest run --project web",
     "test:cli": "vitest run --project cli",
     "test:e2e": "playwright test",
