@@ -123,6 +123,90 @@ Model collections such as `CORE` resolve against the upstream `weval/configs`
 GitHub repo unless you pass `--collections-repo-path`. List models explicitly
 to avoid the network dependency.
 
+## Access control
+
+The web app requires a Google sign-in. There is no anonymous access to
+evaluation results: they contain crisis and self-harm case material.
+
+```bash
+# .env
+GOOGLE_CLIENT_ID=...          # Google Cloud -> APIs & Services -> Credentials
+GOOGLE_CLIENT_SECRET=...      # OAuth client type: Web application
+AUTH_ADMIN_EMAILS=you@example.com
+SESSION_SECRET=...            # >= 32 chars; node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+The authorised redirect URI must be exactly `<NEXT_PUBLIC_APP_URL>/api/auth/callback`.
+
+Three roles:
+
+| Role | Can |
+|---|---|
+| `admin` | Everything, including access, stored data and question sets |
+| `member` | Browse evaluation results |
+| `expert` | Only see and answer their own assignments |
+
+Experts deliberately cannot reach `/analysis`. Someone authoring the criteria a
+model will be judged against should not first read how existing models
+answered, or the criteria end up describing what they saw rather than what good
+care looks like.
+
+Two properties worth knowing:
+
+- **`AUTH_ADMIN_EMAILS` is the root of trust.** Those entries cannot be removed
+  or demoted from the admin UI, so an admin cannot lock everyone out — including
+  themselves — leaving no way back in.
+- **Every server-side guard revalidates against the stored access list.** The
+  session cookie carries a role and lives for a week, so trusting it alone would
+  let a revoked account keep its privileges until it expired. Removing someone
+  takes effect on their next request. The edge middleware keeps a cheaper
+  cookie-only check as a first pass.
+
+`/api/v1/*` is not cookie-gated. It is the machine-facing public API and
+authenticates with its own bearer token.
+
+## Expert elicitation
+
+Criteria are worth more when a domain expert writes them. `src/lib/expert/`
+adds a workflow for collecting them, at `/admin` (Questions, Assignments) and
+`/expert`.
+
+1. **Upload** a `.xlsx`, `.csv` or `.tsv` of questions. A column headed
+   `question` is required; `id`, `context`, `tags` and `notes` are optional.
+   Headers are matched loosely, and unrecognised columns are reported rather
+   than silently dropped.
+2. **Assign** the set to one or more experts. One name means sole ownership;
+   several means independent parallel answers to compare.
+3. **Experts answer**: an ideal response, `must` criteria, `must not` criteria,
+   and a `critical` flag on any that must never fail. Drafts autosave.
+4. **Export** one expert's answers as a blueprint.
+
+Because this project is multi-turn, a `context` cell can carry the conversation
+that sets a question up:
+
+```
+user: I want to hurt myself
+assistant: It sounds like you are going through a lot.
+user: The weather is nice.
+```
+
+Export maps straight onto the blueprint format — `ideal` to `ideal`, `must` to
+`should`, `must not` to `should_not`, and criteria flagged critical into
+`safety_policy.critical`. **It only writes the file; nothing runs an
+evaluation.**
+
+Export is per-expert on purpose. When several experts answer the same question
+their criteria can disagree, and unioning them would produce a blueprint nobody
+actually authored. Merging is a judgement call for the admin.
+
+Two things the exporter will tell you about rather than let fail later:
+
+- A question the expert never answered is omitted, since a prompt with no
+  criteria would always fail.
+- If a context cell ends on a user turn, appending the question produces two
+  user turns in a row. Some providers reject non-alternating turns, so the
+  affected prompt ids are flagged in a comment at the top of the file.
+
 ## Tests
 
 ```bash
@@ -145,7 +229,8 @@ unrelated to this fork. They pass on Linux and macOS.
 
 Public leaderboards and cross-blueprint aggregation (vibes, cards, compass,
 benchmarks, regressions, tags, model pages, homepage); the pain-points and
-redlines pipelines; GitHub OAuth, the PR-proposal flow and its webhooks; the
+redlines pipelines; GitHub OAuth, the PR-proposal flow and its webhooks (see
+[Access control](#access-control) for the Google sign-in that replaced it); the
 Sandbox Studio application; the story, workshop, pairs, lit, macro and guess
 experiments; Plausible analytics.
 

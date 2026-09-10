@@ -2,6 +2,7 @@ import Link from 'next/link';
 import CIPLogo from '@/components/icons/CIPLogo';
 import Icon from '@/components/ui/icon';
 import { APP_REPO_URL } from '@/lib/configConstants';
+import { UserMenu } from '@/app/components/auth/UserMenu';
 
 export function SiteHeader() {
   return (
@@ -10,8 +11,8 @@ export function SiteHeader() {
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <CIPLogo className="w-6 h-6 sm:w-7 sm:h-7 text-foreground" />
-            <span className="font-bold text-foreground">Weval</span>
-            <span className="hidden sm:inline font-normal text-muted-foreground">a Collective Intelligence Project</span>
+            <span className="font-bold text-foreground">Safety Evals</span>
+            <span className="hidden sm:inline font-normal text-muted-foreground">nuanced safety evaluation</span>
           </Link>
           <div className="flex items-center space-x-6">
             <nav className="flex items-center space-x-6">
@@ -26,6 +27,7 @@ export function SiteHeader() {
                 <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-foreground transition-all duration-300 ease-out group-hover:w-full" />
               </a>
             </nav>
+            <UserMenu />
           </div>
         </div>
       </div>
